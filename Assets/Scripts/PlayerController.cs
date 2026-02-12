@@ -1,27 +1,61 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
+    public float moveSpeed = 5.0f;
+    public float jumpForce = 5.0f;
+    private Rigidbody2D rBody;
+    private Vector2 moveInput;
+    private Animator anim;
 
-    public float speed = 5f;
-    private Rigidbody rb;
-    private float movementX;
-    private float movementY;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private bool jumpTriggered;
+
+
+    private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        rBody = GetComponent<Rigidbody2D>();
+        anim = GetComponent<Animator>();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void FixedUpdate()
     {
-        movementX = Input.GetAxis("Horizontal");
-        movementY = Input.GetAxis("Vertical");
+        float moveX = moveInput.x * moveSpeed;
+        rBody.linearVelocity = new Vector2(moveX, rBody.linearVelocity.y);
+
+        // Jump Logic
+        if (jumpTriggered)
+        {
+            // Reset my vertical velocity first to ensure consistent jump heights
+            rBody.linearVelocity = new Vector2(rBody.linearVelocity.x, 0);
+            rBody.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        }
+
+        // Animator Logic
+        anim.SetFloat("xVelocity", Mathf.Abs(rBody.linearVelocity.x));
+
+        // Sprite flipping
+        if (moveInput.x != 0)
+        {
+            transform.localScale = new Vector3(Mathf.Sign(moveInput.x), 1, 1);
+        }
     }
 
-    void FixedUpdate(){
-        Vector3 movement = new Vector3(movementX, 0.0f, movementY);
-        rb.AddForce(movement * speed);
+    public void OnMove(InputAction.CallbackContext context)
+    {
+        moveInput = context.ReadValue<Vector2>();
+        Debug.Log(moveInput);
+    }
+
+    public void OnJump(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            jumpTriggered = true;
+        }
+        else if (context.canceled)
+        {
+            jumpTriggered = false;
+        }
     }
 }
